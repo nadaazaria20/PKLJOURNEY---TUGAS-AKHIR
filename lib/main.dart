@@ -1,4 +1,7 @@
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'models/attendance_record.dart';
 import 'models/internship_location.dart';
 import 'models/journal_entry.dart';
@@ -8,8 +11,15 @@ import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi koneksi Supabase
+  await Supabase.initialize(
+    url: 'https://yitbkygiwrmzofrwcdjh.supabase.co/rest/v1/',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpdGJreWdpd3Jtem9mcndjZGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MjEzMTcsImV4cCI6MjEwODI5NzMxN30.sJkMKFPEOBarmRsAfKvtDtoJAZLwOkLh2WBhuIieCAw',
+  );
+
   runApp(const PklJourneyApp());
 }
 
