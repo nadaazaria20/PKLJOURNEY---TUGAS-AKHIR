@@ -1,7 +1,4 @@
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'models/attendance_record.dart';
 import 'models/internship_location.dart';
 import 'models/journal_entry.dart';
@@ -9,17 +6,17 @@ import 'models/pkl_user.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/splash_screen.dart';
+import 'services/attendance_repostitory.dart';
+import 'services/journal_repository.dart';
+import 'services/location_repository.dart';
+import 'services/supabase_service.dart';
+import 'services/user_repository.dart';
 import 'theme/app_theme.dart';
+import 'widgets/app_widgets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inisialisasi koneksi Supabase
-  await Supabase.initialize(
-    url: 'https://yitbkygiwrmzofrwcdjh.supabase.co/rest/v1/',
-    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpdGJreWdpd3Jtem9mcndjZGpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MjEzMTcsImV4cCI6MjEwODI5NzMxN30.sJkMKFPEOBarmRsAfKvtDtoJAZLwOkLh2WBhuIieCAw',
-  );
-
+  await initSupabase();
   runApp(const PklJourneyApp());
 }
 
@@ -31,33 +28,123 @@ class PklJourneyApp extends StatefulWidget {
 }
 
 class _PklJourneyAppState extends State<PklJourneyApp> {
+  final _userRepo = UserRepository();
+  final _attendanceRepo = AttendanceRepository();
+  final _journalRepo = JournalRepository();
+  final _locationRepo = LocationRepository();
+
   bool _showSplash = true;
   PklUser? _currentUser;
-  final List<PklUser> _users = createDemoUsers();
-  final Map<String, InternshipLocation> _teacherLocations = {};
-  final Map<String, List<AttendanceRecord>> _attendanceRecords = {};
-  final Map<String, List<JournalEntry>> _journalEntries = {
-    '0058291823': [
-      JournalEntry(
-        id: 'demo-workplace-orientation',
-        title: 'Orientasi lingkungan kerja',
-        description:
-            'Mengenal tim, alur kerja, dan tools yang digunakan di bagian teknologi informasi.',
-        date: '30 Sep 2026',
-        time: '15.42',
-        tag: 'Orientasi',
+  List<PklUser> _users = createDemoUsers();
+  final Map<String, InternshipLocation> _teacherLocations = {
+    '19820109940201': const InternshipLocation(
+      companyName: 'PT Aksara Digital Nusantara',
+      address:
+          'Gedung Menara Sudirman Lt. 12, Jl. Jend. Sudirman Kav. 28, Jakarta Pusat',
+      latitude: -6.2146,
+      longitude: 106.8189,
+      radiusMeters: 50,
+    ),
+  };
+  final Map<String, List<AttendanceRecord>> _attendanceRecords = {
+    '007812121134': [
+      AttendanceRecord(
+        date: DateTime.now().subtract(const Duration(days: 1)),
+        checkInTime: '07.50',
+        checkOutTime: '16.05',
+        checkInPhoto: PklPhotoPresets.coding,
+        checkOutPhoto: PklPhotoPresets.report,
+        isApprovedByIduka: true,
+        idukaApproverName: 'Hendro Prasetyo, S.T.',
+        idukaApprovalTime: '16.15 WIB',
       ),
-      JournalEntry(
-        id: 'demo-git-collaboration',
-        title: 'Belajar dasar Git dan kolaborasi',
-        description:
-            'Mempelajari cara membuat branch dan mengirim perubahan dengan pull request.',
-        date: '29 Sep 2026',
-        time: '16.05',
-        tag: 'Pembelajaran',
+      AttendanceRecord(
+        date: DateTime.now().subtract(const Duration(days: 2)),
+        checkInTime: '07.45',
+        checkOutTime: '16.10',
+        checkInPhoto: PklPhotoPresets.meeting,
+        checkOutPhoto: PklPhotoPresets.report,
+        isApprovedByIduka: true,
+        idukaApproverName: 'Hendro Prasetyo, S.T.',
+        idukaApprovalTime: '16.20 WIB',
+      ),
+      AttendanceRecord(
+        date: DateTime.now().subtract(const Duration(days: 3)),
+        checkInTime: '07.55',
+        checkOutTime: '16.00',
+        checkInPhoto: PklPhotoPresets.networking,
+        checkOutPhoto: PklPhotoPresets.report,
+        isApprovedByIduka: true,
+        idukaApproverName: 'Hendro Prasetyo, S.T.',
+        idukaApprovalTime: '16.10 WIB',
       ),
     ],
   };
+  final Map<String, List<JournalEntry>> _journalEntries = {
+    '007812121134': [
+      JournalEntry(
+        id: 'demo-workplace-orientation',
+        title: 'Orientasi Lingkungan Kerja & Setup Tools',
+        description:
+            'Mengenal tim engineering, alur kerja agile scrum, dan setup environment Flutter & Git di divisi teknologi informasi.',
+        date: '18 Nov 2026',
+        time: '15.42',
+        tag: 'Orientasi',
+        isReviewed: true,
+        imageUrl: PklPhotoPresets.meeting,
+        teacherNote:
+            'Laporan awal orientasi sangat baik dan lengkap. Lanjutkan komunikasi yang aktif dengan mentor industri!',
+      ),
+      JournalEntry(
+        id: 'demo-git-collaboration',
+        title: 'Pembuatan Komponen UI & Slicing Figma',
+        description:
+            'Mengimplementasikan desain sistem ke dalam widget Flutter, membuat reusable card, dan pull request ke branch dev.',
+        date: '19 Nov 2026',
+        time: '16.05',
+        tag: 'Proyek',
+        isReviewed: false,
+        imageUrl: PklPhotoPresets.coding,
+      ),
+    ],
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSupabaseData();
+  }
+
+  Future<void> _loadSupabaseData() async {
+    if (!isSupabaseReady) return;
+    try {
+      final remoteUsers = await _userRepo.fetchAll();
+      if (remoteUsers.isNotEmpty && mounted) {
+        setState(() => _users = remoteUsers);
+      }
+
+      final studentIds = _users
+          .where((u) => u.role == UserRole.murid)
+          .map((u) => u.accountId)
+          .toList();
+
+      if (studentIds.isNotEmpty) {
+        final remoteAttendance = await _attendanceRepo.fetchForStudents(studentIds);
+        final remoteJournals = await _journalRepo.fetchForStudents(studentIds);
+        final remoteLocations = await _locationRepo.fetchAll();
+
+        if (mounted) {
+          setState(() {
+            _attendanceRecords.addAll(remoteAttendance);
+            _journalEntries.addAll(remoteJournals);
+            _teacherLocations.addAll(remoteLocations);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error sinkronisasi Supabase: $e');
+    }
+  }
 
   void _finishSplash() {
     if (mounted) setState(() => _showSplash = false);
@@ -69,6 +156,12 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
 
   void _registerAccount(PklUser user) {
     setState(() => _users.add(user));
+    if (isSupabaseReady) {
+      _userRepo.insert(user).catchError((e) {
+        debugPrint('Gagal menyimpan user ke Supabase: $e');
+        return user;
+      });
+    }
   }
 
   void _addTeacherStudent(PklUser teacher, PklUser student) {
@@ -85,6 +178,11 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
             _users[existingIndex].copyWith(mentorAccountId: teacher.accountId);
       }
     });
+    if (isSupabaseReady) {
+      _userRepo.assignMentor(student.accountId, teacher.accountId).catchError((e) {
+        debugPrint('Gagal assign mentor ke Supabase: $e');
+      });
+    }
   }
 
   void _assignStudentMentor(String studentAccountId, String? teacherAccountId) {
@@ -100,10 +198,20 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
         );
       }
     });
+    if (isSupabaseReady) {
+      _userRepo.assignMentor(studentAccountId, teacherAccountId).catchError((e) {
+        debugPrint('Gagal assign mentor ke Supabase: $e');
+      });
+    }
   }
 
   void _saveTeacherLocation(String teacherAccountId, InternshipLocation location) {
     setState(() => _teacherLocations[teacherAccountId] = location);
+    if (isSupabaseReady) {
+      _locationRepo.save(teacherAccountId, location).catchError((e) {
+        debugPrint('Gagal menyimpan lokasi ke Supabase: $e');
+      });
+    }
   }
 
   void _saveAttendance(
@@ -111,6 +219,11 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
     List<AttendanceRecord> records,
   ) {
     setState(() => _attendanceRecords[studentAccountId] = records);
+    if (isSupabaseReady) {
+      _attendanceRepo.saveAll(studentAccountId, records).catchError((e) {
+        debugPrint('Gagal menyimpan presensi ke Supabase: $e');
+      });
+    }
   }
 
   void _addJournalEntry(String studentAccountId, JournalEntry entry) {
@@ -120,14 +233,40 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
         ...(_journalEntries[studentAccountId] ?? const <JournalEntry>[]),
       ];
     });
+    if (isSupabaseReady) {
+      _journalRepo.insert(studentAccountId, entry).then((created) {
+        // update demo id with real supabase id
+        final list = _journalEntries[studentAccountId];
+        if (list != null) {
+          final idx = list.indexOf(entry);
+          if (idx != -1 && mounted) {
+            setState(() => list[idx] = created);
+          }
+        }
+      }).catchError((e) {
+        debugPrint('Gagal menyimpan jurnal ke Supabase: $e');
+        return entry;
+      });
+    }
   }
 
-  void _markJournalReviewed(String studentAccountId, String entryId) {
+  void _markJournalReviewed(String studentAccountId, String entryId,
+      {String? teacherNote}) {
     final entries = _journalEntries[studentAccountId];
     if (entries == null) return;
     final index = entries.indexWhere((entry) => entry.id == entryId);
-    if (index == -1 || entries[index].isReviewed) return;
-    setState(() => entries[index] = entries[index].copyWith(isReviewed: true));
+    if (index == -1) return;
+    setState(() => entries[index] = entries[index].copyWith(
+          isReviewed: true,
+          teacherNote: teacherNote ??
+              entries[index].teacherNote ??
+              'Kegiatan PKL telah diperiksa dan disetujui pembimbing.',
+        ));
+    if (isSupabaseReady) {
+      _journalRepo.markReviewed(studentAccountId, entryId, teacherNote: teacherNote).catchError((e) {
+        debugPrint('Gagal mark review jurnal ke Supabase: $e');
+      });
+    }
   }
 
   void _deleteAccount(PklUser account) {
@@ -149,6 +288,35 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
         _journalEntries.remove(account.accountId);
       }
     });
+
+    if (isSupabaseReady) {
+      _userRepo.delete(account.accountId, account.role.name).catchError((e) {
+        debugPrint('Gagal menghapus user dari Supabase: $e');
+      });
+    }
+  }
+
+  void _updateUser(PklUser updatedUser) {
+    setState(() {
+      final index = _users.indexWhere(
+        (u) =>
+            u.accountId == updatedUser.accountId &&
+            u.role == updatedUser.role,
+      );
+      if (index != -1) {
+        _users[index] = updatedUser;
+      }
+      if (_currentUser?.accountId == updatedUser.accountId &&
+          _currentUser?.role == updatedUser.role) {
+        _currentUser = updatedUser;
+      }
+    });
+
+    if (isSupabaseReady) {
+      _userRepo.update(updatedUser).catchError((e) {
+        debugPrint('Gagal update user di Supabase: $e');
+      });
+    }
   }
 
   void _logout() {
@@ -179,6 +347,7 @@ class _PklJourneyAppState extends State<PklJourneyApp> {
                   onMarkJournalReviewed: _markJournalReviewed,
                   onDeleteAccount: _deleteAccount,
                   onLogout: _logout,
+                  onUpdateUser: _updateUser,
                 )
               : LoginScreen(users: _users, onLogin: _login),
     );

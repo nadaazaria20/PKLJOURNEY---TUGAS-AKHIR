@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../models/pkl_user.dart';
+import '../services/supabase_service.dart';
+import '../services/user_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    super.key,
-    required this.users,
-    required this.onLogin,
-  });
+  const LoginScreen({super.key, required this.users, required this.onLogin});
 
   final List<PklUser> users;
   final ValueChanged<PklUser> onLogin;
@@ -23,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
-  UserRole _selectedRole = UserRole.murid;
 
   @override
   void dispose() {
@@ -32,26 +30,33 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       FocusScope.of(context).unfocus();
+      final input = _usernameController.text.trim().toLowerCase();
+      final pass = _passwordController.text;
+
       PklUser? matchedUser;
       for (final user in widget.users) {
-        if (user.role == _selectedRole &&
-            (user.username.toLowerCase() ==
-                    _usernameController.text.trim().toLowerCase() ||
-                user.accountId.toLowerCase() ==
-                    _usernameController.text.trim().toLowerCase()) &&
-            user.password == _passwordController.text) {
+        if ((user.username.toLowerCase() == input ||
+                user.accountId.toLowerCase() == input) &&
+            user.password == pass) {
           matchedUser = user;
           break;
         }
       }
 
+      if (matchedUser == null && isSupabaseReady) {
+        try {
+          matchedUser = await UserRepository().login(input, pass);
+        } catch (_) {}
+      }
+
       if (matchedUser == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Role, username, atau kata sandi tidak sesuai.'),
+            content: Text('Username/NIP/NISN atau kata sandi tidak sesuai.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -68,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         icon: const Icon(Icons.lock_reset_rounded, color: AppColors.maroon),
         title: const Text('Lupa kata sandi?'),
         content: const Text(
-          'Hubungi admin sekolah untuk mendaftarkan akun atau meminta bantuan reset kata sandi PKLJOURNEY.',
+          'Silakan hubungi administrator sekolah untuk melakukan reset kata sandi akun PKLJOURNEY Anda.',
         ),
         actions: [
           TextButton(
@@ -120,10 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Selamat datang',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
+                                'Selamat Datang',
+                                style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(fontSize: 23),
                               ),
                               const SizedBox(height: 7),
@@ -134,56 +137,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              const _FieldLabel('MASUK SEBAGAI'),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<UserRole>(
-                                value: _selectedRole,
-                                decoration: const InputDecoration(
-                                  prefixIcon: Icon(Icons.switch_account_outlined),
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: UserRole.admin,
-                                    child: Text('Admin'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: UserRole.guru,
-                                    child: Text('Guru'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: UserRole.murid,
-                                    child: Text('Murid'),
-                                  ),
-                                ],
-                                onChanged: (role) {
-                                  if (role != null) {
-                                    setState(() => _selectedRole = role);
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 17),
-                              _FieldLabel(_selectedRole.loginLabel),
+                              const SizedBox(height: 22),
+                              const _FieldLabel('USERNAME / NIP / NISN'),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _usernameController,
                                 textInputAction: TextInputAction.next,
-                                decoration: InputDecoration(
-                                  hintText: switch (_selectedRole) {
-                                    UserRole.admin => 'Contoh: admin',
-                                    UserRole.guru =>
-                                      'Contoh: guru atau NIP dari admin',
-                                    UserRole.murid =>
-                                      'Contoh: murid atau NISN dari admin',
-                                  },
-                                  prefixIcon: Icon(Icons.badge_outlined),
+                                decoration: const InputDecoration(
+                                  hintText: 'masukkan disini',
+                                  prefixIcon: Icon(Icons.person_outline),
                                 ),
                                 validator: (value) =>
                                     value == null || value.trim().isEmpty
-                                        ? 'Masukkan username kamu'
-                                        : null,
+                                    ? 'Masukkan username'
+                                    : null,
                               ),
-                              const SizedBox(height: 19),
+                              const SizedBox(height: 18),
                               const _FieldLabel('PASSWORD'),
                               const SizedBox(height: 8),
                               TextFormField(
@@ -199,8 +168,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? 'Tampilkan kata sandi'
                                         : 'Sembunyikan kata sandi',
                                     onPressed: () => setState(
-                                      () => _obscurePassword =
-                                          !_obscurePassword,
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
                                     ),
                                     icon: Icon(
                                       _obscurePassword
@@ -211,10 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 validator: (value) =>
                                     value == null || value.isEmpty
-                                        ? 'Masukkan kata sandi'
-                                        : null,
+                                    ? 'Masukkan kata sandi'
+                                    : null,
                               ),
-                              const SizedBox(height: 9),
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   Checkbox(
@@ -227,45 +196,51 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const Text(
                                     'Ingat saya',
-                                    style: TextStyle(fontSize: 13),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  TextButton(
-                                    onPressed: _showForgotPassword,
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.maroon,
-                                      padding: EdgeInsets.zero,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.ink,
                                     ),
-                                    child: const Text('Lupa password?'),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              ElevatedButton.icon(
+                              const SizedBox(height: 12),
+                              ElevatedButton(
                                 onPressed: _submit,
-                                icon: const Icon(Icons.login_rounded, size: 19),
-                                label: const Text('Masuk'),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('Masuk'),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward_rounded, size: 18),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 14),
                               Center(
-                                child: Text(
-                                  'Akun demo: ${_demoUsername(_selectedRole)} / ${_demoUsername(_selectedRole)}',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.muted.withOpacity(0.9),
-                                    fontSize: 11,
+                                child: TextButton(
+                                  onPressed: _showForgotPassword,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.maroon,
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: const Text(
+                                    'Lupa password?',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              const Center(
+                              const SizedBox(height: 10),
+                              Center(
                                 child: Text(
-                                  'Akun guru dan murid baru didaftarkan oleh Admin menggunakan NIP atau NISN.',
+                                  'Demo login: admin/admin • guru/guru • iduka/iduka • murid/murid',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: AppColors.muted,
+                                    color: AppColors.muted.withOpacity(0.9),
                                     fontSize: 10,
-                                    height: 1.4,
                                   ),
                                 ),
                               ),
@@ -275,12 +250,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'PKLJOURNEY  •  BELAJAR, BERTUMBUH, BERKARYA',
+                        'PKLJOURNEY  •  BIDANG KEAHLIAN REKAYASA',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.cream.withOpacity(0.68),
                           fontSize: 9,
-                          letterSpacing: 1.1,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -293,28 +269,21 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
-  String _demoUsername(UserRole role) => switch (role) {
-        UserRole.admin => 'admin',
-        UserRole.guru => 'guru',
-        UserRole.murid => 'murid',
-      };
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.label);
-
-  final String label;
+  const _FieldLabel(this.text);
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      label,
+      text,
       style: const TextStyle(
         color: AppColors.taupe,
-        fontSize: 11,
-        letterSpacing: 0.8,
+        fontSize: 10,
         fontWeight: FontWeight.w800,
+        letterSpacing: 0.9,
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/internship_location.dart';
+import '../models/journal_entry.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 
@@ -13,6 +14,8 @@ class DashboardScreen extends StatelessWidget {
     required this.checkOutTime,
     required this.journalCount,
     required this.workplaceLocation,
+    this.idukaMentorName = 'Hendro Prasetyo, S.T.',
+    this.latestJournal,
     required this.onOpenAttendance,
     required this.onOpenJournal,
     required this.onOpenProgress,
@@ -25,9 +28,19 @@ class DashboardScreen extends StatelessWidget {
   final String? checkOutTime;
   final int journalCount;
   final InternshipLocation? workplaceLocation;
+  final String idukaMentorName;
+  final JournalEntry? latestJournal;
   final VoidCallback onOpenAttendance;
   final VoidCallback onOpenJournal;
   final VoidCallback onOpenProgress;
+
+  String _greetingTime() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Selamat Pagi';
+    if (hour < 15) return 'Selamat Siang';
+    if (hour < 18) return 'Selamat Sore';
+    return 'Selamat Malam';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +49,15 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
           Row(
-            children: [
-              const BrandMark(compact: true),
-              const Spacer(),
+            children: const [
+              BrandMark(compact: true),
+              Spacer(),
+              PklNotificationButton(unreadCount: 2),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
+
+          // Main Welcome Banner
           Container(
             padding: const EdgeInsets.all(21),
             decoration: BoxDecoration(
@@ -56,71 +72,76 @@ class DashboardScreen extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned(
-                  right: -2,
-                  top: 5,
+                  right: -8,
+                  top: -5,
                   child: Icon(
-                    Icons.auto_graph_rounded,
-                    color: Colors.white.withOpacity(0.09),
-                    size: 96,
+                    Icons.school_rounded,
+                    color: Colors.white.withOpacity(0.08),
+                    size: 110,
                   ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentDateLabel().toUpperCase(),
-                      style: TextStyle(
-                        color: AppColors.cream.withOpacity(0.8),
-                        fontSize: 10,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          currentDateLabel().toUpperCase(),
+                          style: TextStyle(
+                            color: AppColors.cream.withOpacity(0.85),
+                            fontSize: 10,
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        const InfoPill(
+                          label: 'AKTIF PKL',
+                          color: Color(0x33FFFFFF),
+                          textColor: Colors.white,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 14),
                     Text(
-                      'Halo, ${studentName.split(' ').first}!',
-                      style: TextStyle(
+                      '${_greetingTime()}, ${studentName.split(' ').first}!',
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 26,
+                        fontSize: 24,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Text(
-                      'Satu langkah kecil hari ini, pengalaman besar untuk masa depan.',
+                      'Satu langkah kecil hari ini, pengalaman besar untuk masa depan industrimu.',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.79),
+                        color: Colors.white.withOpacity(0.82),
                         fontSize: 12,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 17),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         const CircleAvatar(
                           radius: 16,
                           backgroundColor: AppColors.cream,
                           child: Icon(
-                            Icons.school_rounded,
+                            Icons.badge_rounded,
                             color: AppColors.maroon,
-                            size: 17,
+                            size: 18,
                           ),
                         ),
-                        const SizedBox(width: 9),
+                        const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
-                            'XI RPL 2  •  Siswa PKL',
+                            'XI RPL 2  •  Rekayasa Perangkat Lunak',
                             style: TextStyle(
                               color: AppColors.cream,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                        InfoPill(
-                          label: 'AKTIF',
-                          color: Colors.white.withOpacity(0.16),
-                          textColor: Colors.white,
                         ),
                       ],
                     ),
@@ -129,74 +150,68 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 23),
-          const SectionLabel('Ringkasan PKL'),
+          const SizedBox(height: 22),
+
+          // Ringkasan PKL Metric Cards (Tanpa Hari Berjalan)
+          const SectionLabel('Ringkasan Kehadiran & Jurnal'),
           Row(
             children: [
               Expanded(
                 child: _SummaryCard(
-                  icon: Icons.calendar_month_rounded,
-                  value: '16 / 32',
-                  label: 'Hari berjalan',
-                  accent: AppColors.maroon,
-                  onTap: onOpenAttendance,
-                ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: _SummaryCard(
                   icon: Icons.fact_check_rounded,
                   value: '98%',
-                  label: 'Kehadiran',
+                  label: 'Kehadiran Terverifikasi',
                   accent: AppColors.green,
                   onTap: onOpenAttendance,
                 ),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: 12),
               Expanded(
                 child: _SummaryCard(
-                  icon: Icons.edit_note_rounded,
+                  icon: Icons.camera_alt_rounded,
                   value: '$journalCount',
-                  label: 'Jurnal',
+                  label: 'Jurnal & Foto Kegiatan',
                   accent: AppColors.amber,
                   onTap: onOpenJournal,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 23),
-          const SectionLabel('Aksi hari ini'),
+          const SizedBox(height: 22),
+
+          // Aksi Hari Ini
+          const SectionLabel('Aktivitas Hari Ini'),
           WhiteCard(
             padding: 0,
             child: Column(
               children: [
                 _ActionRow(
-                  icon: Icons.location_on_outlined,
+                  icon: Icons.camera_alt_rounded,
                   iconColor: AppColors.maroon,
                   iconBg: AppColors.cream,
-                  title: 'Presensi PKL',
+                  title: 'Presensi PKL & Foto Kegiatan',
                   subtitle: hasCheckedIn
-                      ? 'Sudah masuk pukul ${checkInTime ?? '--:--'}'
-                      : 'Catat kehadiranmu hari ini',
+                      ? 'Tercatat masuk pukul ${checkInTime ?? '--:--'} WIB'
+                      : 'Unggah foto bukti kehadiran masuk',
                   trailing: Icon(
                     hasCheckedIn
                         ? Icons.check_circle_rounded
                         : Icons.arrow_forward_ios_rounded,
-                    size: hasCheckedIn ? 19 : 15,
+                    size: hasCheckedIn ? 20 : 14,
                     color: hasCheckedIn ? AppColors.green : AppColors.muted,
                   ),
                   onTap: onOpenAttendance,
                 ),
                 const Divider(height: 1, indent: 68, endIndent: 16),
                 _ActionRow(
-                  icon: Icons.menu_book_rounded,
+                  icon: Icons.add_a_photo_rounded,
                   iconColor: AppColors.amber,
                   iconBg: AppColors.paleAmber,
-                  title: 'Tulis jurnal kegiatan',
-                  subtitle: 'Ceritakan hal yang kamu pelajari',
+                  title: 'Tulis Jurnal & Dokumentasi',
+                  subtitle: 'Catat tugas dan lampirkan foto kegiatan hari ini',
                   trailing: const Icon(
                     Icons.arrow_forward_ios_rounded,
-                    size: 15,
+                    size: 14,
                     color: AppColors.muted,
                   ),
                   onTap: onOpenJournal,
@@ -204,69 +219,104 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 23),
-          SectionLabel(
-            'Perjalananmu',
-            action: 'Lihat progres',
-            onAction: onOpenProgress,
-          ),
-          WhiteCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Minggu ke-3 dari 6',
-                        style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: 22),
+
+          // Latest Journal Preview
+          if (latestJournal != null) ...[
+            SectionLabel(
+              'Jurnal Terbaru',
+              action: 'Lihat Semua',
+              onAction: onOpenJournal,
+            ),
+            WhiteCard(
+              padding: 14,
+              onTap: onOpenJournal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      InfoPill(
+                        label: latestJournal!.tag,
+                        color: AppColors.paper,
+                        textColor: AppColors.taupe,
                       ),
+                      const SizedBox(width: 6),
+                      InfoPill(
+                        label: latestJournal!.isReviewed
+                            ? 'Disetujui'
+                            : 'Menunggu Review',
+                        color: latestJournal!.isReviewed
+                            ? AppColors.paleGreen
+                            : AppColors.paleAmber,
+                        textColor: latestJournal!.isReviewed
+                            ? AppColors.green
+                            : AppColors.amber,
+                        icon: latestJournal!.isReviewed
+                            ? Icons.check_circle_rounded
+                            : Icons.hourglass_top_rounded,
+                      ),
+                      const Spacer(),
+                      Text(
+                        latestJournal!.date,
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    latestJournal!.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
                     ),
-                    const Text(
-                      '50%',
-                      style: TextStyle(
-                        color: AppColors.maroon,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    latestJournal!.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        const TextStyle(fontSize: 12, color: AppColors.muted),
+                  ),
+                  if (latestJournal!.imageUrl != null) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        latestJournal!.imageUrl!,
+                        height: 90,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: const LinearProgressIndicator(
-                    value: 0.5,
-                    minHeight: 9,
-                    backgroundColor: AppColors.cream,
-                    color: AppColors.maroon,
-                  ),
-                ),
-                const SizedBox(height: 11),
-                Text(
-                  hasCheckedOut
-                      ? 'Presensimu hari ini sudah lengkap. Terus pertahankan!'
-                      : 'Konsisten sedikit demi sedikit. Kamu sudah di tengah perjalanan!',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
+            const SizedBox(height: 22),
+          ],
+
+          // Tempat Praktik & Pembimbing IDUKA
+          const SectionLabel('Tempat Praktik & Pembimbing IDUKA'),
           WhiteCard(
-            padding: 15,
+            padding: 16,
             child: Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: AppColors.paleGreen,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(
-                    Icons.business_center_outlined,
+                    Icons.business_center_rounded,
                     color: AppColors.green,
+                    size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -274,43 +324,50 @@ class DashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Tempat praktik',
-                        style: TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 11,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              workplaceLocation?.companyName ??
+                                  'PT Aksara Digital Nusantara',
+                              style: const TextStyle(
+                                color: AppColors.ink,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified_rounded,
+                            color: AppColors.green,
+                            size: 16,
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 3),
-                      Text(
-                        workplaceLocation?.companyName ??
-                            'Lokasi PKL belum ditetapkan',
-                        style: const TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
                         workplaceLocation?.address ??
-                            'Hubungi guru pembimbing untuk informasi lokasi.',
+                            'Gedung Menara Sudirman Lt. 12, Jl. Jend. Sudirman Kav. 28, Jakarta Pusat',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.muted,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Pembimbing IDUKA: $idukaMentorName',
+                        style: const TextStyle(
+                          color: AppColors.maroon,
                           fontSize: 10,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (workplaceLocation != null)
-                  const Icon(
-                    Icons.verified_rounded,
-                    color: AppColors.green,
-                    size: 19,
-                  ),
               ],
             ),
           ),
@@ -318,7 +375,6 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -342,12 +398,12 @@ class _SummaryCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: WhiteCard(
-        padding: 12,
+        padding: 14,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: accent, size: 20),
-            const SizedBox(height: 12),
+            Icon(icon, color: accent, size: 22),
+            const SizedBox(height: 10),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -360,12 +416,12 @@ class _SummaryCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.muted, fontSize: 10),
+              style: const TextStyle(color: AppColors.muted, fontSize: 11),
             ),
           ],
         ),
@@ -403,9 +459,9 @@ class _ActionRow extends StatelessWidget {
         child: Row(
           children: [
             CircleAvatar(
-              radius: 21,
+              radius: 20,
               backgroundColor: iconBg,
-              child: Icon(icon, color: iconColor, size: 21),
+              child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(

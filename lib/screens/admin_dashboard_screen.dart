@@ -34,20 +34,16 @@ class AdminDashboardScreen extends StatelessWidget {
             children: [
               BrandMark(compact: true),
               Spacer(),
-              InfoPill(
-                label: 'ADMIN',
-                color: AppColors.cream,
-                textColor: AppColors.maroon,
-                icon: Icons.admin_panel_settings_outlined,
-              ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
+
+          // Maroon Banner Panel Administrator
           Container(
             padding: const EdgeInsets.all(21),
             decoration: BoxDecoration(
               color: AppColors.maroon,
-              borderRadius: BorderRadius.circular(23),
+              borderRadius: BorderRadius.circular(24),
               gradient: const LinearGradient(
                 colors: [AppColors.maroon, AppColors.maroonDark],
                 begin: Alignment.topLeft,
@@ -60,26 +56,26 @@ class AdminDashboardScreen extends StatelessWidget {
                 Text(
                   'PANEL ADMINISTRATOR',
                   style: TextStyle(
-                    color: AppColors.cream.withValues(alpha: 0.8),
+                    color: AppColors.cream.withOpacity(0.85),
                     fontSize: 10,
                     letterSpacing: 1.2,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 11),
+                const SizedBox(height: 10),
                 Text(
                   'Halo, ${user.name.split(' ').first}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 25,
+                    fontSize: 24,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Kelola akun guru, murid, dan penetapan bimbingan PKL dari satu tempat.',
+                  'Kelola akun guru dan murid PKL dari satu tempat.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: Colors.white.withOpacity(0.82),
                     fontSize: 12,
                     height: 1.5,
                   ),
@@ -89,7 +85,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _AdminMetric(
-                        label: 'Murid',
+                        label: 'MURID',
                         value: '${students.length}',
                         icon: Icons.school_outlined,
                       ),
@@ -97,7 +93,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _AdminMetric(
-                        label: 'Guru',
+                        label: 'GURU',
                         value: '$teacherCount',
                         icon: Icons.person_pin_outlined,
                       ),
@@ -105,7 +101,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _AdminMetric(
-                        label: 'Total akun',
+                        label: 'TOTAL AKUN',
                         value: '${users.length}',
                         icon: Icons.groups_2_outlined,
                       ),
@@ -117,7 +113,65 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 22),
 
-          // Mentorship Management Card
+          // Kelola Akun Card (Matches Figma Home Screen)
+          const SectionLabel('Kelola akun'),
+          WhiteCard(
+            padding: 18,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.cream,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.person_add_alt_1_rounded,
+                        color: AppColors.maroon,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Daftarkan guru atau murid',
+                            style: TextStyle(
+                              color: AppColors.ink,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Daftarkan NIP untuk guru dan NISN untuk murid.',
+                            style: TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: onManageAccounts,
+                  child: const Text('+ Buka pengelolaan akun'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Mentorship Status Card
           const SectionLabel('Penetapan bimbingan'),
           WhiteCard(
             padding: 16,
@@ -127,7 +181,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 Row(
                   children: [
                     CircleAvatar(
-                      radius: 21,
+                      radius: 20,
                       backgroundColor: unassignedCount > 0
                           ? AppColors.paleAmber
                           : AppColors.paleGreen,
@@ -147,35 +201,30 @@ class AdminDashboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Guru pembimbing murid',
+                            'Status Pembimbing Murid',
                             style: TextStyle(
                               color: AppColors.ink,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             unassignedCount > 0
                                 ? '$unassignedCount murid belum ditentukan pembimbingnya.'
-                                : 'Semua murid sudah memiliki pembimbing.',
+                                : 'Seluruh murid telah memiliki pembimbing.',
                             style: TextStyle(
                               color: unassignedCount > 0
                                   ? AppColors.amber
                                   : AppColors.muted,
                               fontSize: 11,
-                              fontWeight: unassignedCount > 0
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
                             ),
                           ),
                         ],
                       ),
                     ),
                     InfoPill(
-                      label: unassignedCount > 0
-                          ? '$unassignedCount Perlu'
-                          : 'Lengkap',
+                      label: unassignedCount > 0 ? '$unassignedCount Perlu' : 'Lengkap',
                       color: unassignedCount > 0
                           ? AppColors.paleAmber
                           : AppColors.paleGreen,
@@ -186,72 +235,18 @@ class AdminDashboardScreen extends StatelessWidget {
                   ],
                 ),
                 if (onManageMentorship != null) ...[
-                  const SizedBox(height: 15),
-                  ElevatedButton.icon(
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
                     onPressed: onManageMentorship,
-                    icon: const Icon(Icons.assignment_ind_outlined, size: 19),
-                    label: const Text('Atur pembimbing siswa'),
+                    icon: const Icon(Icons.assignment_ind_outlined, size: 18),
+                    label: const Text('Kelola Pembimbing Siswa'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.maroon,
+                      side: const BorderSide(color: AppColors.line),
+                      minimumSize: const Size.fromHeight(46),
+                    ),
                   ),
                 ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          const SectionLabel('Kelola akun'),
-          WhiteCard(
-            padding: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 21,
-                      backgroundColor: AppColors.cream,
-                      child: Icon(
-                        Icons.person_add_alt_1_rounded,
-                        color: AppColors.maroon,
-                        size: 20,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Daftarkan guru atau murid',
-                            style: TextStyle(
-                              color: AppColors.ink,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Gunakan NIP untuk guru dan NISN untuk murid.',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                OutlinedButton.icon(
-                  onPressed: onManageAccounts,
-                  icon: const Icon(Icons.manage_accounts_outlined, size: 19),
-                  label: const Text('Buka pengelolaan akun'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.maroon,
-                    side: const BorderSide(color: AppColors.maroon),
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                ),
               ],
             ),
           ),
@@ -277,29 +272,32 @@ class _AdminMetric extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.11),
+        color: Colors.white.withOpacity(0.12),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.cream, size: 18),
+          Icon(icon, color: AppColors.cream, size: 17),
           const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 19,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.77),
-              fontSize: 10,
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 9,
+              letterSpacing: 0.6,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

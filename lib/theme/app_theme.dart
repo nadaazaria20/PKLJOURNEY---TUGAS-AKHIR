@@ -4,7 +4,7 @@ abstract final class AppColors {
   static const maroon = Color(0xFF6B0D0D);
   static const maroonDark = Color(0xFF4C0808);
   static const cream = Color(0xFFE9DCC9);
-  static const paper = Color(0xFFFAF8F4);
+  static const paper = Color(0xFFF4ECE1);
   static const ink = Color(0xFF282421);
   static const muted = Color(0xFF827A72);
   static const taupe = Color(0xFF76695C);

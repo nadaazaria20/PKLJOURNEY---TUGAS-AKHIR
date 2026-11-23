@@ -4,7 +4,7 @@ import '../models/internship_location.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 
-class AttendanceScreen extends StatelessWidget {
+class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({
     super.key,
     required this.hasCheckedIn,
@@ -14,6 +14,7 @@ class AttendanceScreen extends StatelessWidget {
     required this.onAttendanceAction,
     required this.records,
     required this.workplaceLocation,
+    this.idukaMentorName = 'Hendro Prasetyo, S.T.',
   });
 
   final bool hasCheckedIn;
@@ -23,127 +24,579 @@ class AttendanceScreen extends StatelessWidget {
   final VoidCallback onAttendanceAction;
   final List<AttendanceRecord> records;
   final InternshipLocation? workplaceLocation;
+  final String idukaMentorName;
+
+  @override
+  State<AttendanceScreen> createState() => _AttendanceScreenState();
+}
+
+class _AttendanceScreenState extends State<AttendanceScreen> {
+  final String _currentPhotoUrl = PklPhotoPresets.coding;
+
+  void _recordAttendance() {
+    if (widget.hasCheckedIn && widget.hasCheckedOut) return;
+
+    final isCheckIn = !widget.hasCheckedIn;
+    widget.onAttendanceAction();
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.line,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  color: AppColors.paleGreen,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.green,
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isCheckIn
+                    ? 'Foto Presensi Masuk Berhasil Diunggah!'
+                    : 'Foto Presensi Pulang Berhasil Diunggah!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Kehadiranmu tercatat dan menunggu konfirmasi dari Pembimbing IDUKA (${widget.idukaMentorName}).',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.muted, fontSize: 12, height: 1.5),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.paper,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.line),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_rounded,
+                            size: 16, color: AppColors.maroon),
+                        const SizedBox(width: 8),
+                        const Text('Waktu Tercatat:',
+                            style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                        const Spacer(),
+                        Text('${currentTimeLabel()} WIB',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                    const Divider(height: 16),
+                    Row(
+                      children: [
+                        const Icon(Icons.business_rounded,
+                            size: 16, color: AppColors.green),
+                        const SizedBox(width: 8),
+                        const Text('Konfirmasi Oleh:',
+                            style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                        const Spacer(),
+                        Text('Pembimbing IDUKA',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.green)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('Mengerti & Tutup'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttendanceDetail(AttendanceRecord record) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.line,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Icon(Icons.event_note_rounded,
+                        color: AppColors.maroon, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Detail Presensi Harian',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${record.shortWeekday}, ${record.shortDate}',
+                  style: const TextStyle(
+                      color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 18),
+
+                // Approval Status Card (Only IDUKA confirms)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: record.isApprovedByIduka
+                        ? AppColors.paleGreen
+                        : AppColors.paleAmber,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: record.isApprovedByIduka
+                          ? AppColors.green.withOpacity(0.3)
+                          : AppColors.amber.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: record.isApprovedByIduka
+                            ? AppColors.green
+                            : AppColors.amber,
+                        child: Icon(
+                          record.isApprovedByIduka
+                              ? Icons.check_circle_rounded
+                              : Icons.hourglass_top_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              record.isApprovedByIduka
+                                  ? 'Disetujui Pembimbing IDUKA'
+                                  : 'Menunggu Konfirmasi IDUKA',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: record.isApprovedByIduka
+                                    ? AppColors.green
+                                    : AppColors.amber,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              record.isApprovedByIduka
+                                  ? 'Dikonfirmasi oleh ${record.idukaApproverName ?? widget.idukaMentorName} • ${record.idukaApprovalTime ?? '16.15 WIB'}'
+                                  : 'Pembimbing industri: ${widget.idukaMentorName}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.taupe,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Waktu & Foto Masuk
+                const Text(
+                  'PRESENSI MASUK',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.taupe,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.line),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.login_rounded,
+                              size: 16, color: AppColors.green),
+                          const SizedBox(width: 6),
+                          const Text('Waktu Masuk: ',
+                              style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                          Text(
+                            record.checkInTime != null
+                                ? '${record.checkInTime} WIB'
+                                : 'Belum presensi',
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                      if (record.checkInPhoto != null || record.checkInTime != null) ...[
+                        const SizedBox(height: 10),
+                        PklPhotoThumbnail(
+                          imageUrl: record.checkInPhoto ?? _currentPhotoUrl,
+                          height: 130,
+                          caption: 'Foto Bukti Presensi Masuk',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Waktu & Foto Pulang
+                const Text(
+                  'PRESENSI PULANG',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.taupe,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.line),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.logout_rounded,
+                              size: 16, color: AppColors.maroon),
+                          const SizedBox(width: 6),
+                          const Text('Waktu Pulang: ',
+                              style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                          Text(
+                            record.checkOutTime != null
+                                ? '${record.checkOutTime} WIB'
+                                : 'Belum presensi pulang',
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                      if (record.checkOutTime != null) ...[
+                        const SizedBox(height: 10),
+                        PklPhotoThumbnail(
+                          imageUrl: record.checkOutPhoto ?? PklPhotoPresets.report,
+                          height: 130,
+                          caption: 'Foto Bukti Presensi Pulang',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup Detail'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isComplete = hasCheckedIn && hasCheckedOut;
+    final isComplete = widget.hasCheckedIn && widget.hasCheckedOut;
     final statusLabel = isComplete
-        ? 'Presensi lengkap'
-        : hasCheckedIn
-            ? 'Sedang praktik'
-            : 'Belum presensi';
+        ? 'Presensi Lengkap'
+        : widget.hasCheckedIn
+            ? 'Sedang Praktik'
+            : 'Belum Presensi';
     final statusColor = isComplete
         ? AppColors.green
-        : hasCheckedIn
+        : widget.hasCheckedIn
             ? AppColors.amber
             : AppColors.maroon;
-    final actionLabel = isComplete
-        ? 'Presensi hari ini selesai'
-        : hasCheckedIn
-            ? 'Catat presensi pulang'
-            : 'Catat presensi masuk';
 
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
           PageHeading(
-            title: 'Presensi',
-            subtitle: 'Catat kehadiran PKL-mu hari ini.',
-            trailing: InfoPill(
-              label: statusLabel,
-              color: isComplete
-                  ? AppColors.paleGreen
-                  : hasCheckedIn
-                      ? AppColors.paleAmber
-                      : AppColors.cream,
-              textColor: statusColor,
-              icon: isComplete
-                  ? Icons.check_circle_outline_rounded
-                  : Icons.schedule_rounded,
+            title: 'Presensi PKL',
+            subtitle: 'Upload foto kehadiran untuk konfirmasi Pembimbing IDUKA.',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InfoPill(
+                  label: statusLabel,
+                  color: isComplete
+                      ? AppColors.paleGreen
+                      : widget.hasCheckedIn
+                          ? AppColors.paleAmber
+                          : AppColors.cream,
+                  textColor: statusColor,
+                  icon: isComplete
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.schedule_rounded,
+                ),
+                const SizedBox(width: 6),
+                const PklNotificationButton(unreadCount: 2),
+              ],
             ),
           ),
-          WhiteCard(
-            padding: 20,
+
+          // Live Clock & Operational Time Banner
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.maroon, AppColors.maroonDark],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const CircleAvatar(
-                      radius: 23,
-                      backgroundColor: AppColors.cream,
-                      child: Icon(
-                        Icons.calendar_today_rounded,
-                        color: AppColors.maroon,
-                        size: 20,
+                    Text(
+                      currentDateLabel().toUpperCase(),
+                      style: TextStyle(
+                        color: AppColors.cream.withOpacity(0.85),
+                        fontSize: 10,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            currentDateLabel(),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 3),
-                          const Text(
-                            'Jam kerja 08.00 – 16.00',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
+                    const InfoPill(
+                      label: 'PKL AKTIF',
+                      color: Color(0x33FFFFFF),
+                      textColor: Colors.white,
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: AppColors.paper,
-                    borderRadius: BorderRadius.circular(17),
+                const SizedBox(height: 12),
+                const LiveClockWidget(isLight: true),
+                const SizedBox(height: 6),
+                Text(
+                  'Jam Kerja Industri: 08.00 – 16.00 WIB',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.75),
+                    fontSize: 11,
                   ),
-                  child: Row(
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Konfirmasi IDUKA Notice
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.paleGreen,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.green.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_user_rounded,
+                    color: AppColors.green, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Presensi dikonfirmasi dan disetujui langsung oleh Pembimbing IDUKA (${widget.idukaMentorName}). Guru sekolah tidak perlu mengonfirmasi presensi.',
+                    style: const TextStyle(
+                      color: AppColors.green,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Upload Foto & Catat Kehadiran (Tanpa Ganti Foto)
+          const SectionLabel('Foto Kehadiran Hari Ini'),
+          WhiteCard(
+            padding: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Stack(
                     children: [
-                      Expanded(
-                        child: _TimeBlock(
-                          label: 'MASUK',
-                          time: checkInTime ?? '--.--',
-                          complete: hasCheckedIn,
+                      Image.network(
+                        _currentPhotoUrl,
+                        height: 170,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 170,
+                          color: AppColors.cream,
+                          child: const Center(
+                            child: Icon(Icons.camera_alt,
+                                size: 48, color: AppColors.maroon),
+                          ),
                         ),
                       ),
-                      Container(
-                        width: 1,
-                        height: 44,
-                        color: AppColors.line,
-                        margin: const EdgeInsets.symmetric(horizontal: 15),
-                      ),
-                      Expanded(
-                        child: _TimeBlock(
-                          label: 'PULANG',
-                          time: checkOutTime ?? '--.--',
-                          complete: hasCheckedOut,
+                      Positioned(
+                        left: 10,
+                        bottom: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.68),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.access_time_rounded,
+                                  size: 12, color: Colors.white),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Foto kehadiran ${currentTimeLabel()} WIB',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 17),
+                const SizedBox(height: 16),
+
+                // Time Blocks
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.paper,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _TimeBlock(
+                          label: 'JAM MASUK',
+                          time: widget.checkInTime ?? '--.--',
+                          complete: widget.hasCheckedIn,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: AppColors.line,
+                        margin: const EdgeInsets.symmetric(horizontal: 14),
+                      ),
+                      Expanded(
+                        child: _TimeBlock(
+                          label: 'JAM PULANG',
+                          time: widget.checkOutTime ?? '--.--',
+                          complete: widget.hasCheckedOut,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
                 ElevatedButton.icon(
-                  onPressed: isComplete ? null : onAttendanceAction,
+                  onPressed: isComplete ? null : _recordAttendance,
                   icon: Icon(
                     isComplete
                         ? Icons.check_circle_rounded
-                        : hasCheckedIn
+                        : widget.hasCheckedIn
                             ? Icons.logout_rounded
-                            : Icons.login_rounded,
+                            : Icons.camera_alt_rounded,
                   ),
-                  label: Text(actionLabel),
+                  label: Text(
+                    isComplete
+                        ? 'Presensi Hari Ini Selesai'
+                        : widget.hasCheckedIn
+                            ? 'Upload Foto & Catat Pulang'
+                            : 'Upload Foto & Catat Masuk',
+                  ),
                   style: isComplete
                       ? ElevatedButton.styleFrom(
                           disabledBackgroundColor: AppColors.paleGreen,
@@ -151,82 +604,40 @@ class AttendanceScreen extends StatelessWidget {
                         )
                       : null,
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Pastikan kamu berada di tempat praktik saat mencatat kehadiran.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.muted, fontSize: 10),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 21),
-          const SectionLabel('Lokasi praktik'),
-          WhiteCard(
-            padding: 15,
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 21,
-                  backgroundColor: AppColors.paleGreen,
-                  child: Icon(
-                    Icons.business_outlined,
-                    color: AppColors.green,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        workplaceLocation?.companyName ??
-                            'Lokasi PKL belum ditetapkan',
-                        style: const TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        workplaceLocation?.address ??
-                            'Hubungi guru pembimbing untuk informasi lokasi.',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 10,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 21),
+          const SizedBox(height: 22),
+
+          // Riwayat Presensi (Clickable tiles)
           SectionLabel(
-            'Riwayat presensi',
-            action: '${records.length} hari',
+            'Riwayat Kehadiran (Klik untuk Detail)',
+            action: '${widget.records.length} hari',
           ),
           WhiteCard(
-            padding: records.isEmpty ? 16 : 0,
-            child: records.isEmpty
-                ? const Text(
-                    'Belum ada riwayat presensi. Catat presensi masuk untuk memulai.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.muted, height: 1.5),
+            padding: widget.records.isEmpty ? 16 : 0,
+            child: widget.records.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text(
+                        'Belum ada riwayat presensi.',
+                        style: TextStyle(color: AppColors.muted),
+                      ),
+                    ),
                   )
                 : Column(
                     children: [
                       for (var index = 0;
-                          index < records.length && index < 7;
+                          index < widget.records.length && index < 7;
                           index++) ...[
                         if (index > 0)
                           const Divider(height: 1, indent: 16, endIndent: 16),
-                        _AttendanceHistoryRow(record: records[index]),
+                        InkWell(
+                          onTap: () => _showAttendanceDetail(widget.records[index]),
+                          borderRadius: BorderRadius.circular(16),
+                          child: _AttendanceHistoryRow(record: widget.records[index]),
+                        ),
                       ],
                     ],
                   ),
@@ -269,7 +680,7 @@ class _TimeBlock extends StatelessWidget {
               time,
               style: TextStyle(
                 color: complete ? AppColors.ink : AppColors.muted,
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -295,7 +706,6 @@ class _AttendanceHistoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final complete = record.checkInTime != null && record.checkOutTime != null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       child: Row(
@@ -325,23 +735,42 @@ class _AttendanceHistoryRow extends StatelessWidget {
               ],
             ),
           ),
-          const Spacer(),
-          _TimeBlock(
-            label: 'Masuk',
-            time: record.checkInTime ?? '--.--',
-            complete: record.checkInTime != null,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Masuk: ${record.checkInTime ?? '--.--'}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Pulang: ${record.checkOutTime ?? '--.--'}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.muted),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  record.approvalStatusLabel,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: record.isApprovedByIduka
+                        ? AppColors.green
+                        : AppColors.amber,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 18),
-          _TimeBlock(
-            label: 'Pulang',
-            time: record.checkOutTime ?? '--.--',
-            complete: record.checkOutTime != null,
-          ),
-          const SizedBox(width: 7),
-          Icon(
-            complete ? Icons.check_circle_rounded : Icons.more_horiz_rounded,
-            color: complete ? AppColors.green : AppColors.amber,
-            size: 17,
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: AppColors.muted,
+            size: 19,
           ),
         ],
       ),

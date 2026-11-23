@@ -18,24 +18,12 @@ class AdminAccountsScreen extends StatelessWidget {
   final ValueChanged<PklUser> onDeleteAccount;
 
   Future<void> _confirmDelete(BuildContext context, PklUser account) async {
-    final assignedStudents = account.role == UserRole.guru
-        ? users
-            .where(
-              (user) =>
-                  user.role == UserRole.murid &&
-                  user.mentorAccountId == account.accountId,
-            )
-            .length
-        : 0;
-    final detail = assignedStudents > 0
-        ? '\n\n$assignedStudents murid bimbingan akan dilepas dari guru ini. Akun murid tidak akan dihapus.'
-        : '';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus akun?'),
         content: Text(
-          'Akun ${account.name} (${account.role.label}) akan dihapus.$detail',
+          'Akun ${account.name} (${account.role.label}) akan dihapus dari sistem PKLJOURNEY.',
         ),
         actions: [
           TextButton(
@@ -48,7 +36,7 @@ class AdminAccountsScreen extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus akun'),
+            child: const Text('Hapus Akun'),
           ),
         ],
       ),
@@ -104,13 +92,17 @@ class AdminAccountsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final guruCount = users.where((u) => u.role == UserRole.guru).length;
+    final idukaCount = users.where((u) => u.role == UserRole.iduka).length;
+    final muridCount = users.where((u) => u.role == UserRole.murid).length;
+
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
           PageHeading(
-            title: 'Kelola akun',
-            subtitle: 'Daftarkan akun guru dan murid PKL.',
+            title: 'Kelola Akun',
+            subtitle: 'Daftarkan akun guru, murid, dan pembimbing IDUKA.',
             trailing: IconButton.filled(
               onPressed: () => _openRegistrationForm(context),
               tooltip: 'Tambah akun',
@@ -134,7 +126,7 @@ class AdminAccountsScreen extends StatelessWidget {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Username guru adalah NIP. Username murid adalah NISN. Akun baru bisa langsung dipakai untuk login demo.',
+                    'Admin memegang kendali seluruh data: NIP guru, NISN murid, akun pembimbing IDUKA, dan alamat masing-masing pihak.',
                     style: TextStyle(
                       color: AppColors.taupe,
                       fontSize: 11,
@@ -151,15 +143,23 @@ class AdminAccountsScreen extends StatelessWidget {
               Expanded(
                 child: _CountBox(
                   title: 'Guru',
-                  count: users.where((u) => u.role == UserRole.guru).length,
+                  count: guruCount,
                   icon: Icons.person_pin_outlined,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _CountBox(
+                  title: 'IDUKA',
+                  count: idukaCount,
+                  icon: Icons.business_rounded,
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: _CountBox(
                   title: 'Murid',
-                  count: users.where((u) => u.role == UserRole.murid).length,
+                  count: muridCount,
                   icon: Icons.school_outlined,
                 ),
               ),
@@ -179,22 +179,16 @@ class AdminAccountsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => _openRegistrationForm(context),
             icon: const Icon(Icons.add_rounded),
-            label: const Text('Daftarkan akun baru'),
+            label: const Text('+ Daftarkan akun baru'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.maroon,
               side: const BorderSide(color: AppColors.maroon),
               minimumSize: const Size.fromHeight(48),
             ),
-          ),
-          const SizedBox(height: 13),
-          const Text(
-            'Akun baru dan kata sandi disimpan sementara di memori aplikasi demo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.muted, fontSize: 10),
           ),
         ],
       ),
@@ -216,31 +210,33 @@ class _CountBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return WhiteCard(
-      padding: 15,
+      padding: 13,
       child: Row(
         children: [
           CircleAvatar(
-            radius: 19,
+            radius: 17,
             backgroundColor: AppColors.cream,
-            child: Icon(icon, color: AppColors.maroon, size: 18),
+            child: Icon(icon, color: AppColors.maroon, size: 17),
           ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '$count',
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: AppColors.ink,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              Text(
-                title,
-                style: const TextStyle(color: AppColors.muted, fontSize: 10),
-              ),
-            ],
+                Text(
+                  title,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 10),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -259,20 +255,24 @@ class _AccountTile extends StatelessWidget {
     final color = switch (account.role) {
       UserRole.admin => AppColors.maroon,
       UserRole.guru => AppColors.green,
+      UserRole.iduka => const Color(0xFF2E6B8B),
       UserRole.murid => AppColors.amber,
     };
     final icon = switch (account.role) {
       UserRole.admin => Icons.admin_panel_settings_outlined,
       UserRole.guru => Icons.person_pin_outlined,
+      UserRole.iduka => Icons.business_rounded,
       UserRole.murid => Icons.school_outlined,
     };
+
     return WhiteCard(
       padding: 14,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 21,
-            backgroundColor: color.withOpacity(0.1),
+            radius: 20,
+            backgroundColor: color.withOpacity(0.12),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
@@ -280,39 +280,70 @@ class _AccountTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  account.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        account.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    InfoPill(
+                      label: account.role.label,
+                      color: color.withOpacity(0.12),
+                      textColor: color,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   '${account.role.accountIdLabel}: ${account.accountId}',
                   style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 10,
+                    color: AppColors.ink,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (account.companyName != null &&
+                    account.companyName!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Perusahaan: ${account.companyName}',
+                    style: const TextStyle(
+                      color: AppColors.taupe,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (account.address != null && account.address!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Alamat: ${account.address}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          InfoPill(
-            label: account.role.label,
-            color: color.withOpacity(0.1),
-            textColor: color,
-          ),
           if (onDelete != null) ...[
-            const SizedBox(width: 2),
+            const SizedBox(width: 4),
             IconButton(
               onPressed: onDelete,
               tooltip: 'Hapus akun',
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.delete_outline_rounded),
+              icon: const Icon(Icons.delete_outline_rounded, size: 20),
               color: AppColors.maroon,
             ),
           ],
@@ -332,6 +363,9 @@ class _RegistrationForm extends StatefulWidget {
 class _RegistrationFormState extends State<_RegistrationForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _companyController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   UserRole _role = UserRole.murid;
@@ -340,6 +374,9 @@ class _RegistrationFormState extends State<_RegistrationForm> {
   @override
   void dispose() {
     _nameController.dispose();
+    _companyController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
     _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -355,6 +392,11 @@ class _RegistrationFormState extends State<_RegistrationForm> {
         name: _nameController.text.trim(),
         role: _role,
         accountId: identifier,
+        companyName: _role == UserRole.iduka
+            ? _companyController.text.trim()
+            : null,
+        address: _addressController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
       ),
     );
   }
@@ -393,7 +435,7 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 5),
-                const Text('Akun demo bisa langsung digunakan untuk login.'),
+                const Text('Akun bisa langsung digunakan untuk login.'),
                 const SizedBox(height: 18),
                 const _RegistrationLabel('JENIS AKUN'),
                 const SizedBox(height: 7),
@@ -405,11 +447,15 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                   items: const [
                     DropdownMenuItem(
                       value: UserRole.murid,
-                      child: Text('Murid'),
+                      child: Text('Murid PKL'),
                     ),
                     DropdownMenuItem(
                       value: UserRole.guru,
-                      child: Text('Guru'),
+                      child: Text('Guru Pembimbing Sekolah'),
+                    ),
+                    DropdownMenuItem(
+                      value: UserRole.iduka,
+                      child: Text('Pembimbing IDUKA (Industri)'),
                     ),
                   ],
                   onChanged: (role) {
@@ -430,41 +476,73 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                           ? 'Nama lengkap wajib diisi'
                           : null,
                 ),
+                if (_role == UserRole.iduka) ...[
+                  const SizedBox(height: 13),
+                  const _RegistrationLabel('NAMA PERUSAHAAN / IDUKA'),
+                  const SizedBox(height: 7),
+                  TextFormField(
+                    controller: _companyController,
+                    decoration: const InputDecoration(
+                      hintText: 'Contoh: PT Aksara Digital Nusantara',
+                      prefixIcon: Icon(Icons.business_rounded),
+                    ),
+                    validator: (val) => val == null || val.trim().isEmpty
+                        ? 'Nama perusahaan/IDUKA wajib diisi'
+                        : null,
+                  ),
+                ],
                 const SizedBox(height: 13),
-                _RegistrationLabel(_role.accountIdLabel.toUpperCase()),
+                const _RegistrationLabel('USERNAME / NIP / NISN / ID'),
                 const SizedBox(height: 7),
                 TextFormField(
                   controller: _identifierController,
-                  keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     hintText: _role == UserRole.murid
-                        ? 'Masukkan 10 digit NISN'
-                        : 'Masukkan NIP guru',
+                        ? 'Contoh: 005124012423 (NISN)'
+                        : _role == UserRole.guru
+                            ? 'Contoh: 19820109940201 (NIP)'
+                            : 'Contoh: IDUKA-002',
                     prefixIcon: const Icon(Icons.badge_outlined),
                   ),
                   validator: (value) {
                     final id = value?.trim() ?? '';
-                    if (id.isEmpty) return '${_role.accountIdLabel} wajib diisi';
-                    if (!RegExp(r'^\d+$').hasMatch(id)) {
-                      return '${_role.accountIdLabel} harus berupa angka';
-                    }
-                    if (_role == UserRole.murid && id.length != 10) {
-                      return 'NISN harus terdiri dari 10 digit';
-                    }
-                    if (_role == UserRole.guru && id.length < 8) {
-                      return 'Masukkan NIP yang valid';
-                    }
+                    if (id.isEmpty) return 'Username/ID wajib diisi';
                     return null;
                   },
                 ),
                 const SizedBox(height: 13),
-                const _RegistrationLabel('KATA SANDI AWAL'),
+                const _RegistrationLabel('ALAMAT LENGKAP (DIKELOLA ADMIN)'),
+                const SizedBox(height: 7),
+                TextFormField(
+                  controller: _addressController,
+                  decoration: const InputDecoration(
+                    hintText: 'Masukkan alamat lengkap domisili / kantor',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                  ),
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty
+                          ? 'Alamat wajib diisi oleh Admin'
+                          : null,
+                ),
+                const SizedBox(height: 13),
+                const _RegistrationLabel('NOMOR TELEPON / WA'),
+                const SizedBox(height: 7),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    hintText: 'Contoh: 081234567890',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+                const SizedBox(height: 13),
+                const _RegistrationLabel('PASSWORD'),
                 const SizedBox(height: 7),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    hintText: 'Buat kata sandi untuk akun ini',
+                    hintText: 'Masukkan kata sandi akun',
                     prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
                       onPressed: () => setState(
@@ -478,15 +556,14 @@ class _RegistrationFormState extends State<_RegistrationForm> {
                     ),
                   ),
                   validator: (value) =>
-                      value == null || value.length < 4
-                          ? 'Kata sandi minimal 4 karakter'
+                      value == null || value.length < 3
+                          ? 'Kata sandi minimal 3 karakter'
                           : null,
                 ),
-                const SizedBox(height: 17),
-                ElevatedButton.icon(
+                const SizedBox(height: 18),
+                ElevatedButton(
                   onPressed: _save,
-                  icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: const Text('Daftarkan akun'),
+                  child: const Text('+ Daftarkan akun'),
                 ),
               ],
             ),

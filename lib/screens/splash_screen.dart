@@ -48,22 +48,13 @@ class _SplashScreenState extends State<SplashScreen>
             children: [
               const BrandMark(light: true, showWordmark: false),
               const SizedBox(height: 18),
-              Text(
+              const Text(
                 'PKLJOURNEY',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.cream,
-                      fontFamily: 'serif',
-                      fontSize: 21,
-                      letterSpacing: 2.4,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Perjalanan hebat dimulai dari sini',
                 style: TextStyle(
-                  color: AppColors.cream.withOpacity(0.75),
-                  fontSize: 12,
-                  letterSpacing: 0.3,
+                  color: AppColors.cream,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3.0,
                 ),
               ),
             ],
